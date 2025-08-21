@@ -11,7 +11,7 @@ export default function App() {
   const [suggestions, setSuggestions] = useState([]);
   const [searchedCategory, setSearchedCategory] = useState("");
 
-  // Fetch category suggestions (debounced)
+  // 🔹 Fetch category suggestions
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (category.length < 2) {
@@ -30,12 +30,11 @@ export default function App() {
         console.error("Suggestion fetch error:", err.message);
       }
     };
-
     const timeout = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(timeout);
   }, [category]);
 
-  // Generate business names
+  // 🔹 Generate business names + check trademark
   const generateNames = async (isRegenerate = false) => {
     if (!category.trim()) {
       alert("Please enter a category");
@@ -53,26 +52,16 @@ export default function App() {
       });
 
       if (!response.ok) throw new Error("Failed to fetch names");
-
       const data = await response.json();
 
-      // Ensure uniqueness
-      const seen = new Set();
-      const uniqueNames = [];
-
-      (data.results || []).forEach((item) => {
-        const nameValue = typeof item === "string" ? item : item.name;
-        if (!seen.has(nameValue.toLowerCase())) {
-          seen.add(nameValue.toLowerCase());
-          uniqueNames.push(item);
-        }
-      });
-
-      // Normalize format
-      const formatted = uniqueNames.map((item, idx) => ({
+      const formatted = (data.results || []).map((item, idx) => ({
         number: idx + 1,
         name: typeof item === "string" ? item : item.name,
         meaning: typeof item === "string" ? "" : item.meaning,
+        trademarked:
+          typeof item === "object" && item.trademarked
+            ? item.trademarked
+            : { us: false, india: false },
       }));
 
       setResults(formatted);
@@ -109,11 +98,11 @@ export default function App() {
     <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
       <h1 style={{ color: "#333" }}>AI Business Name Generator</h1>
 
-      {/* Search input with suggestions */}
+      {/* Input + Suggestions */}
       <div style={{ marginBottom: "1rem", position: "relative" }}>
         <input
           type="text"
-          placeholder="Enter category "
+          placeholder="Enter category (e.g. clothing, tech, food)"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           style={{
@@ -123,7 +112,6 @@ export default function App() {
             border: "1px solid #ccc",
           }}
         />
-        {/* Suggestions dropdown */}
         {suggestions.length > 0 && (
           <ul
             style={{
@@ -148,18 +136,11 @@ export default function App() {
                   padding: "0.4rem",
                   cursor: "pointer",
                   borderBottom: "1px solid #eee",
-                  transition: "0.2s",
                 }}
                 onClick={() => {
                   setCategory(s);
                   setSuggestions([]);
                 }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.background = "#f1f1f1")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
               >
                 {s}
               </li>
@@ -204,14 +185,13 @@ export default function App() {
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* Results heading */}
+      {/* Results */}
       {searchedCategory && results.length > 0 && (
-        <h2 style={{ color: "#444" }}>
+        <h2>
           Results for <span style={{ color: "#007bff" }}>{searchedCategory}</span>
         </h2>
       )}
 
-      {/* Generated names list */}
       {results.length > 0 && (
         <ul
           style={{
@@ -231,9 +211,7 @@ export default function App() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                fontWeight: "bold",
-                color: "#444",
-                cursor: "pointer",
+                flexWrap: "wrap",
               }}
               onClick={() =>
                 setSelectedMeaning(
@@ -241,7 +219,32 @@ export default function App() {
                 )
               }
             >
-              {item.number}. {item.name}
+              <span>
+                {item.number}. {item.name}
+              </span>
+
+              {/* Trademark statuses */}
+              <div style={{ marginLeft: "1rem", fontSize: "0.9rem" }}>
+                <span
+                  style={{
+                    color: item.trademarked.us ? "red" : "green",
+                    marginRight: "0.8rem",
+                  }}
+                >
+                  {item.trademarked.us ? "❌ US Trademarked" : "✅ US Available"}
+                </span>
+                <span
+                  style={{
+                    color: item.trademarked.india ? "red" : "green",
+                  }}
+                >
+                  {item.trademarked.india
+                    ? "❌ India Trademarked"
+                    : "✅ India Available"}
+                </span>
+              </div>
+
+              {/* Buttons */}
               <div>
                 <button
                   onClick={(e) => {
@@ -289,7 +292,7 @@ export default function App() {
         </ul>
       )}
 
-      {/* Show meaning of selected name */}
+      {/* Show meaning */}
       {selectedMeaning && (
         <div
           style={{
@@ -305,7 +308,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Favorites section */}
+      {/* Favorites */}
       {favorites.length > 0 && (
         <div
           style={{
@@ -316,7 +319,7 @@ export default function App() {
             borderRadius: "8px",
           }}
         >
-          <h2 style={{ color: "#856404" }}>Saved Favorites</h2>
+          <h2>Saved Favorites</h2>
           <ul style={{ listStyle: "none", padding: 0 }}>
             {favorites.map((fav, i) => (
               <li
@@ -326,7 +329,6 @@ export default function App() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  fontWeight: "bold",
                 }}
               >
                 {fav}
@@ -351,5 +353,4 @@ export default function App() {
         </div>
       )}
     </div>
-  );
-}
+  );}
