@@ -19,7 +19,7 @@ export default function App() {
         return;
       }
       try {
-        const response = await fetch("http://localhost:3000/suggest", {
+        const response = await fetch("http://localhost:3000/api/suggest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: category }),
@@ -45,7 +45,7 @@ export default function App() {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:3000/generate", {
+      const response = await fetch("http://localhost:3000/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, isRegenerate }),
@@ -353,4 +353,5 @@ export default function App() {
         </div>
       )}
     </div>
-  );}
+  );
+}
